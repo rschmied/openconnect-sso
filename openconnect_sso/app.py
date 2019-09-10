@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import signal
+import sys
 from pathlib import Path
 
 import structlog
@@ -20,11 +21,10 @@ logger = structlog.get_logger()
 
 def run(args):
     configure_logger(logging.getLogger(), args.log_level)
-    loop = asyncio.get_event_loop()
-    use_asyncio_event_loop(loop)
+    loop = setup_event_loop()
 
     try:
-        return asyncio.get_event_loop().run_until_complete(_run(args))
+        return loop.run_until_complete(_run(args))
     except KeyboardInterrupt:
         logger.warn("CTRL-C pressed, exiting")
 
@@ -48,6 +48,15 @@ def configure_logger(logger, level):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(level)
+
+
+def setup_event_loop():
+    if sys.platform == "win32":
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
+    loop = asyncio.get_event_loop()
+    use_asyncio_event_loop(loop)
+    return loop
 
 
 async def _run(args):
