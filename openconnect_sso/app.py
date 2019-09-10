@@ -100,7 +100,10 @@ async def select_profile(profile_list):
         values=[(p, p.name) for i, p in enumerate(profile_list)],
         async_=True,
     ).to_asyncio_future()
-    asyncio.get_event_loop().remove_signal_handler(signal.SIGWINCH)
+    # Somehow prompt_toolkit sets up a bogus signal handler upon exit
+    # TODO: Report this issue upstream
+    if hasattr(signal, "SIGWINCH"):
+        asyncio.get_event_loop().remove_signal_handler(signal.SIGWINCH)
     if not selection:
         return selection
     logger.info("Selected profile", profile=selection.name)
